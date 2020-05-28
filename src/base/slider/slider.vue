@@ -4,6 +4,14 @@
           <slot></slot>
           <div class="dots"></div>
       </div>
+      <div class="dots">
+          <span 
+                class="dota" 
+                v-for="(item, index) in dots" 
+                :key="index"
+                :class="{active: currentPageIndex === index}">
+          </span>
+      </div>
   </div>
 </template>
 
@@ -12,6 +20,12 @@ import BScroll from 'better-scroll'
 import { addClass } from 'common/js/dom'
 export default {
     name: 'slider',
+    data () {
+        return {
+            dots: [],
+            currentPageIndex: 0
+        }
+    },
     props: {
         loop: {
             type: Boolean,
@@ -27,7 +41,7 @@ export default {
         }
     },
     methods: {
-        _setSliderWidth() {
+        _setSliderWidth(isResize) {
             this.children = this.$refs.sliderGroup.children
             let width = 0
             let siliderWidth = this.$refs.slider.clientWidth
@@ -37,10 +51,13 @@ export default {
                 child.style.width = siliderWidth+ 'px'
                 width += siliderWidth
             }
-            if (this.loop) {
+            if (this.loop && !isResize) {
                 width += 2 * siliderWidth
             }
             this.$refs.siliderWidth.style.width = width + 'px'
+        },
+        _initDots() {
+            this.dots = new Array(this.children.length)
         },
         _initSlider() {
             this.slider = new BScroll(this.$refs.slider, {
@@ -50,15 +67,49 @@ export default {
                 snap: true,
                 snapLoop: this.loop,
                 snapThreshold: 0.3,
-                snapSpeed: 400,
-                click: true
+                snapSpeed: 400
             })
+            this.slider.on('scollEnd', () => {
+                let pageIndex = this.slider.getCurrentPage().pageX
+                if (this.loop) {
+                    pageIndex -= 1
+                }
+                this.currentPageIndex = pageIndex
+                if (this.autoPlay) {
+                    clearTimeout(this.timer)
+                    this._play()
+                }
+            })
+        },
+        _play() {
+            let pageIndex = this.currentPageIndex + 1
+            if (this.loop) {
+                pageIndex += 1
+            }
+            this.timer = setTimeout(() => {
+                this.slider.goToPage(pageIndex, 0 ,400)
+            },this.interval)
         }
+    },
+    destroyed() {
+        clearTimeout(this.timer)
     },
     mounted() {
         setTimeout(() => {
+            this._setSliderWidth()
+            this._initDots()
             this._initSlider()
+            if (this.autoPlay) {
+                this._play()
+            }
         },20)
+        window.addEventListener('resize', () => {
+            if (!this.slider) {
+                return
+            }
+            this._setSliderWidth(true)
+            this.slider.refresh()
+        })
     }
 }
 </script>
