@@ -54,15 +54,15 @@ export default {
             if (this.loop && !isResize) {
                 width += 2 * siliderWidth
             }
-            this.$refs.siliderWidth.style.width = width + 'px'
+            this.$refs.sliderGroup.style.width = width + 'px'
         },
         _initDots() {
             this.dots = new Array(this.children.length)
         },
         _initSlider() {
             this.slider = new BScroll(this.$refs.slider, {
-                scollX: true,
-                scollY: false,
+                scrollX: true,
+                scrollY: false,
                 momentum: false,
                 snap: true,
                 snapLoop: this.loop,

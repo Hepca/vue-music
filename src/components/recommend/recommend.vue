@@ -18,7 +18,7 @@
 </template>
 
 <script>
-import { getRecommend, getDiscList } from 'api/recommend'
+import { queryBannerList } from 'api/index'
 import { ERR_OK } from 'api/config'
 import Slider from 'base/slider/slider'
 export default {
@@ -30,27 +30,24 @@ export default {
             recommends: []
         }
     },
-    created() {
-        this._getRecommend()
-        this._getDiscList()
-    },
     methods: {
         _getRecommend() {
-            getRecommend().then((res) => {
-                if (res.code === ERR_OK) {
-                    this.recommends = res.data.slider
-                    console.log(res.data.slider)
-                }
+            queryBannerList({}).then((res) => {
+                this.recommends = res.data.data.slider
             })
         },
         _getDiscList() {
-            getDiscList().then((res) => {
-                if (res.code === ERR_OK) {
-                    console.log(res.data.list)
-                }
-            })
+        //     getDiscList().then((res) => {
+        //         if (res.code === ERR_OK) {
+        //             console.log(res.data.list)
+        //         }
+        //     })
         }
-    }
+    },
+    mounted() {
+        this._getRecommend()
+        this._getDiscList()
+    },
 }
 </script>
 
