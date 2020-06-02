@@ -1,33 +1,55 @@
 <template>
   <div class="recommend">
-      <div class="recommend-content">
-          <div class="slider-wrapper" v-if="recommends.length">
-              <Slider>
-                  <div v-for="(item, index) in recommends" :key="index">
-                      <a :href="item.linkUrl">
-                          <img :src="item.picUrl" />
-                      </a>
-                  </div>
-              </Slider>
-          </div>
-          <div class="recommend-list">
+      <Scroll ref="scroll" class="recommend-content" :data="discList">
+        <div>
+            <div class="slider-wrapper" v-if="recommends.length">
+                <Slider>
+                    <div v-for="(item, index) in recommends" :key="index">
+                        <a :href="item.linkUrl">
+                            <img class="needsclick" @onload="loadImage" :src="item.picUrl" />
+                        </a>
+                    </div>
+                </Slider>
+            </div>
+            <div class="recommend-list">
               <h1 class="list-title">热门歌单推荐</h1>
-          </div>
-      </div>
+              <ul>
+                <li class="item" v-for="(item, index) in discList" :key="index">
+                    <div class="icon">
+                        <img width="60" height="60" v-lazy="item.imgurl" />
+                    </div>
+                    <div class="text">
+                        <h2 class="name">{{item.creator.name}}</h2>
+                        <p class="desc">{{item.dissname}}</p>
+                    </div>
+                </li> 
+              </ul>
+            </div>
+        </div>
+        <div class="loading-container" v-if="!discList.length">
+            <loading></loading>
+        </div>
+      </Scroll>
   </div>
 </template>
 
 <script>
-import { queryBannerList } from 'api/index'
+import { queryBannerList, queryRecommendList } from 'api/index'
 import { ERR_OK } from 'api/config'
 import Slider from 'base/slider/slider'
+import Scroll from 'base/scroll/index'
+import loading from 'base/loading/index'
 export default {
     components: {
-        Slider
+        Slider,
+        Scroll,
+        loading
     },
     data() {
         return {
-            recommends: []
+            recommends: [],
+            discList: [],
+            isloading: false,
         }
     },
     methods: {
@@ -37,11 +59,16 @@ export default {
             })
         },
         _getDiscList() {
-        //     getDiscList().then((res) => {
-        //         if (res.code === ERR_OK) {
-        //             console.log(res.data.list)
-        //         }
-        //     })
+            queryRecommendList().then((res) => {
+                this.discList = res.data.data.list
+            })
+        },
+        loadImage() {
+            if (!this.checkLoading) {
+                 this.$.scroll.refresh()
+                 this.checkLoading = true
+            }
+           
         }
     },
     mounted() {
