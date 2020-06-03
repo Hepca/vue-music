@@ -1,7 +1,7 @@
 <template>
-  <scroll class="listview" :data="data" ref="listview">
+  <scroll class="listview" :data="data" ref="listview" :listenScroll="listenScroll" :probeType="probeType" @scroll="scroll">
       <ul>
-          <li class="list-group" v-for="(group, index) in data" :key="index" ref="listgroup">
+          <li class="list-group" v-for="(group, index) in data" :key="index" ref="listGroup">
               <h2 class="list-group-title">{{group.title}}</h2>
               <ul>
                   <li class="list-group-item" v-for="(item, index) in group.items" :key="index">
@@ -11,9 +11,14 @@
               </ul>
           </li>
       </ul>
-      <div class="list-shortcut" @touchstart="onShortcutTouchStart">
+      <div class="list-shortcut" @touchstart="onShortcutTouchStart" @touchmove.stop.prevent="onShortcutTouchMove">
           <ul>
-              <li class="item" v-for="(item, index) in shortcutList" :key="index" :data-index="index">
+              <li 
+                class="item" 
+                v-for="(item, index) in shortcutList" 
+                :class="{'current': currentIndex === index}"
+                :key="index" 
+                :data-index="index">
                   {{item}}
               </li>
           </ul>
@@ -24,6 +29,7 @@
 <script>
 import Scroll from 'base/scroll/index'
 import { getData } from 'common/js/dom'
+const ANCHOR_HEIGHT = 18
 export default {
     name: 'Listview',
     components: {
@@ -35,18 +41,78 @@ export default {
             default: []
         }
     },
+    data () {
+        return {
+            scrollY: -1,
+            currentIndex: 0
+        } 
+    },
     computed: {
         shortcutList() {
             return this.data.map((group) => {
+                console.log(group.title.substr(0, 1), 'd')
                 return group.title.substr(0, 1)
+                
             })
         }
     },
     methods: {
         onShortcutTouchStart(e) {
             let anchorIndex = getData(e.target, 'index')
-            this.$refs.listview.scrollToElement(this.$refs.listgroup[anchorIndex], 0)
+            let firstTouch = e.touches[0]
+            this.touch.y1 = firstTouch.pageY
+            this._scrollTo(anchorIndex)
+        },
+        onShortcutTouchMove(e) {
+            let firstTouch  = e.touches[0]
+            this.touch.y2 = firstTouch.pageY
+            this.touch.anchorIndex = anchorIndex
+            let delta = (this.touch.y2 - this.touch.y1) / ANCHOR_HEIGHT | 0
+            let anchorIndex = parseInt(this.touch.anchorIndex) + delta
+            this._scrollTo(anchorIndex)
+        },
+        _scrollTo(index) {
+            this.$refs.listview.scrollToElement(this.$refs.listGroup[index], 0)
+        },
+        scroll(pos) {
+            this.scrollY = pos.y
+        },
+        _calcuateHeight() {
+            this.listHeight = []
+            const list = this.$refs.listGroup
+            let height = 0
+            this.listHeight.push(height)
+            for (let i = 0; i < list.length ; i++) {
+                let item = list[i]
+                height += item.clientHeight
+                this.listHeight.push(height)
+            }
         }
+    },
+    watch: {
+      data() {
+          setTimeout(() => {
+              this._calcuateHeight()
+          },20)
+      },
+      scrollY(newY) {
+          const listHeight = this.listHeight
+          for (let i = 0; i < listHeight.length; i++) {
+              let height1 = listHeight[i]
+              let height2 = listHeight[i+1]
+              if (!height2 || (-newY > height1 && -newY < height2)) {
+                  this.currentIndex = i
+                  return
+              }
+          }
+          this.currentIndex = 0
+      }  
+    },
+    created () {
+        this.touch = {}
+        this.listenScroll = true
+        this.listHeight = []
+        this.probeType = 3
     }
 }
 </script>
@@ -80,7 +146,7 @@ export default {
                     margin-left: 20px
                     color: $color-text-l
                     font-size: $font-size-medium
-            .list-shortcut
+         .list-shortcut
                 position: absolute
                 z-index: 30
                 right: 0
